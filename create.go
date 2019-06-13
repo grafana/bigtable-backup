@@ -75,7 +75,7 @@ func createBackup(config createBackupConfig) error {
 		}
 		_, err = service.Projects.Templates.Create(*config.bigtableProjectId, &createJobFromTemplateRequest).Do()
 		if err != nil {
-			return fmt.Errorf("Error restoring table with Id %s with error: %s", bigtableID, err)
+			return fmt.Errorf("Error backing up table with Id %s with error: %s", bigtableID, err)
 		}
 	}
 	return nil
