@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/grafana/bigtable-backup/pkg/backup"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
@@ -12,23 +13,23 @@ var (
 	app = kingpin.New("bigtable-backup", "A command-line for creating and restoring backups from bigtable.")
 
 	createCmd = app.Command("create", "Create backups for all the tables for given prefix")
-	createCmdFlags = registerCreateBackupFlags(createCmd)
+	createCmdFlags = backup.RegisterCreateBackupFlags(createCmd)
 
 	listBackupsCmd = app.Command("list-backups", "Restore backups of all or specific bigtableTableId created for specific timestamp")
-	listBackupFlags = registerListBackupsFlags(listBackupsCmd)
+	listBackupFlags = backup.RegisterListBackupsFlags(listBackupsCmd)
 
 	restoreCmd = app.Command("restore", "Restore backups of specific bigtableTableId created at a timestamp")
-	restoreCmdFlags = registerRestoreBackupsFlags(restoreCmd)
+	restoreCmdFlags = backup.RegisterRestoreBackupsFlags(restoreCmd)
 )
 
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case createCmd.FullCommand():
-		if err := createBackup(createCmdFlags); err != nil {
+		if err := backup.CreateBackup(createCmdFlags); err != nil {
 			log.Fatalf("Error creating backups %v", err)
 		}
 	case listBackupsCmd.FullCommand():
-		if backupTimestamps, err := listBackups(listBackupFlags); err != nil {
+		if backupTimestamps, err := backup.ListBackups(listBackupFlags); err != nil {
 			log.Fatalf("Error listing backups %v", err)
 		} else {
 			if len(backupTimestamps) == 0 {
@@ -38,7 +39,7 @@ func main() {
 			}
 		}
 	case restoreCmd.FullCommand():
-		if err := restoreBackup(restoreCmdFlags); err != nil {
+		if err := backup.RestoreBackup(restoreCmdFlags); err != nil {
 			log.Fatalf("Error restoring backup %v", err)
 		}
 	}

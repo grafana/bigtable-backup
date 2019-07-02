@@ -1,4 +1,4 @@
-package main
+package backup
 
 import (
 	"context"
@@ -11,23 +11,26 @@ import (
 	"strings"
 )
 
-type listBackupConfig struct {
-	backupPath *string
+type ListBackupConfig struct {
+	backupPath string
 }
 
-func registerListBackupsFlags(cmd *kingpin.CmdClause) (config listBackupConfig) {
-	config.backupPath = cmd.Flag("backup-path", "GCS path where backups can be found").Required().String()
-	return
+func RegisterListBackupsFlags(cmd *kingpin.CmdClause) (*ListBackupConfig) {
+	config := ListBackupConfig{}
+	cmd.Flag("backup-path", "GCS path where backups can be found").Required().StringVar(&config.backupPath)
+	return &config
 }
 
-func listBackups(config listBackupConfig) ([]string, error) {
+func ListBackups(config *ListBackupConfig) ([]string, error) {
+	fmt.Println(config)
 	ctx := context.Background()
 	service, err := storageV1.NewService(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketName, objectPrefix := getBucketNameAndObjectPrefix(*config.backupPath)
+	bucketName, objectPrefix := getBucketNameAndObjectPrefix(config.backupPath)
+	fmt.Println(bucketName, objectPrefix)
 
 	objectListCall := service.Objects.List(bucketName)
 	if objectPrefix != "" {
@@ -84,7 +87,7 @@ func getBucketNameAndObjectPrefix(backupPath string) (bucketName, objectPrefix s
 }
 
 func getNewestBackupTimestamp(backupPath string) (*int64, error) {
-	backupTimestamps, err := listBackups(listBackupConfig{&backupPath})
+	backupTimestamps, err := ListBackups(&ListBackupConfig{backupPath})
 	if err != nil {
 		return nil, err
 	}
