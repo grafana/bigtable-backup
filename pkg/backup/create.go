@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"strings"
 	"time"
+
+	"gopkg.in/alecthomas/kingpin.v2"
 
 	bigtableAdminV2 "google.golang.org/api/bigtableadmin/v2"
 	dataflowV1b3 "google.golang.org/api/dataflow/v1b3"
@@ -14,18 +15,18 @@ import (
 
 const (
 	bigtableToGCSSequenceFileTemplatePath = "gs://dataflow-templates/latest/Cloud_Bigtable_to_GCS_SequenceFile"
-	bigtableIDSeparatorInSeqFileName = ":"
+	bigtableIDSeparatorInSeqFileName      = ":"
 )
 
 type CreateBackupConfig struct {
-	bigtableProjectId string
-	bigtableInstanceId string
+	bigtableProjectId     string
+	bigtableInstanceId    string
 	bigtableTableIdPrefix string
-	destinationPath string
-	tempPrefix string
+	destinationPath       string
+	tempPrefix            string
 }
 
-func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) (*CreateBackupConfig) {
+func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) *CreateBackupConfig {
 	config := CreateBackupConfig{}
 	cmd.Flag("bigtable-project-id", "The ID of the GCP project of the Cloud Bigtable instance that you want to read data from").Required().StringVar(&config.bigtableProjectId)
 	cmd.Flag("bigtable-instance-id", "The ID of the Cloud Bigtable instance that contains the table").Required().StringVar(&config.bigtableInstanceId)
@@ -41,9 +42,8 @@ func CreateBackup(config *CreateBackupConfig) error {
 		config.destinationPath = config.destinationPath + "/"
 	}
 	unixNow := time.Now().Unix()
-	destinationPathWithTimestamp := fmt.Sprintf("%s%d/",config.destinationPath, unixNow)
+	destinationPathWithTimestamp := fmt.Sprintf("%s%d/", config.destinationPath, unixNow)
 
-	fmt.Println(config)
 	bigtableIDs, err := listBigtableIDsWithPrefix(config)
 	if err != nil {
 		return err

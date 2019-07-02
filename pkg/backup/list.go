@@ -3,26 +3,25 @@ package backup
 import (
 	"context"
 	"errors"
-	"fmt"
-	storageV1 "google.golang.org/api/storage/v1"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"regexp"
 	"strconv"
 	"strings"
+
+	storageV1 "google.golang.org/api/storage/v1"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type ListBackupConfig struct {
 	backupPath string
 }
 
-func RegisterListBackupsFlags(cmd *kingpin.CmdClause) (*ListBackupConfig) {
+func RegisterListBackupsFlags(cmd *kingpin.CmdClause) *ListBackupConfig {
 	config := ListBackupConfig{}
 	cmd.Flag("backup-path", "GCS path where backups can be found").Required().StringVar(&config.backupPath)
 	return &config
 }
 
 func ListBackups(config *ListBackupConfig) ([]string, error) {
-	fmt.Println(config)
 	ctx := context.Background()
 	service, err := storageV1.NewService(ctx)
 	if err != nil {
@@ -30,7 +29,6 @@ func ListBackups(config *ListBackupConfig) ([]string, error) {
 	}
 
 	bucketName, objectPrefix := getBucketNameAndObjectPrefix(config.backupPath)
-	fmt.Println(bucketName, objectPrefix)
 
 	objectListCall := service.Objects.List(bucketName)
 	if objectPrefix != "" {
@@ -69,11 +67,10 @@ func ListBackups(config *ListBackupConfig) ([]string, error) {
 }
 
 func getBucketNameAndObjectPrefix(backupPath string) (bucketName, objectPrefix string) {
-	if strings.HasPrefix(backupPath,"gs://") {
+	if strings.HasPrefix(backupPath, "gs://") {
 		backupPath = backupPath[5:]
 	}
 	ss := strings.SplitN(backupPath, "/", 2)
-	fmt.Println(ss)
 	bucketName = ss[0]
 
 	if len(ss) == 2 {

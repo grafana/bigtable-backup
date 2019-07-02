@@ -2,23 +2,24 @@ package main
 
 import (
 	"fmt"
-	"github.com/grafana/bigtable-backup/pkg/backup"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/grafana/bigtable-backup/pkg/backup"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
 	app = kingpin.New("bigtable-backup", "A command-line for creating and restoring backups from bigtable.")
 
-	createCmd = app.Command("create", "Create backups for all the tables for given prefix")
+	createCmd      = app.Command("create", "Create backups for all the tables for given prefix")
 	createCmdFlags = backup.RegisterCreateBackupFlags(createCmd)
 
-	listBackupsCmd = app.Command("list-backups", "Restore backups of all or specific bigtableTableId created for specific timestamp")
+	listBackupsCmd  = app.Command("list-backups", "Restore backups of all or specific bigtableTableId created for specific timestamp")
 	listBackupFlags = backup.RegisterListBackupsFlags(listBackupsCmd)
 
-	restoreCmd = app.Command("restore", "Restore backups of specific bigtableTableId created at a timestamp")
+	restoreCmd      = app.Command("restore", "Restore backups of specific bigtableTableId created at a timestamp")
 	restoreCmdFlags = backup.RegisterRestoreBackupsFlags(restoreCmd)
 )
 

@@ -3,23 +3,24 @@ package backup
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	dataflowV1b3 "google.golang.org/api/dataflow/v1b3"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"strings"
 )
 
 const GCSSequenceFileToBigtableTemplatePath = "gs://dataflow-templates/latest/GCS_SequenceFile_to_Cloud_Bigtable"
 
 type RestoreBackupConfig struct {
-	backupPath       string
+	backupPath         string
 	bigtableProjectId  string
 	bigtableInstanceId string
 	bigtableTableId    string
 	tempPrefix         string
-	backupTimestamp  int64
+	backupTimestamp    int64
 }
 
-func RegisterRestoreBackupsFlags(cmd *kingpin.CmdClause) (*RestoreBackupConfig) {
+func RegisterRestoreBackupsFlags(cmd *kingpin.CmdClause) *RestoreBackupConfig {
 	config := RestoreBackupConfig{}
 	cmd.Flag("backup-path", "GCS path where backups can be found").Required().StringVar(&config.backupPath)
 	cmd.Flag("bigtable-project-id", "The ID of the GCP project of the Cloud Bigtable instance that you want to read data from").Required().StringVar(&config.bigtableProjectId)
@@ -62,7 +63,7 @@ func RestoreBackup(config *RestoreBackupConfig) error {
 			"bigtableProject":    config.bigtableProjectId,
 			"bigtableInstanceId": config.bigtableInstanceId,
 			"bigtableTableId":    config.bigtableTableId,
-			"sourcePattern":     fmt.Sprintf("%s%d/%s%s*", config.backupPath, config.backupTimestamp, config.bigtableTableId, bigtableIDSeparatorInSeqFileName),
+			"sourcePattern":      fmt.Sprintf("%s%d/%s%s*", config.backupPath, config.backupTimestamp, config.bigtableTableId, bigtableIDSeparatorInSeqFileName),
 		},
 		Environment: &dataflowV1b3.RuntimeEnvironment{
 			TempLocation: config.tempPrefix,
