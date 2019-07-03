@@ -12,12 +12,12 @@ import (
 )
 
 type ListBackupConfig struct {
-	backupPath string
+	BackupPath string
 }
 
 func RegisterListBackupsFlags(cmd *kingpin.CmdClause) *ListBackupConfig {
 	config := ListBackupConfig{}
-	cmd.Flag("backup-path", "GCS path where backups can be found").Required().StringVar(&config.backupPath)
+	cmd.Flag("backup-path", "GCS path where backups can be found").Required().StringVar(&config.BackupPath)
 	return &config
 }
 
@@ -28,7 +28,7 @@ func ListBackups(config *ListBackupConfig) ([]string, error) {
 		return nil, err
 	}
 
-	bucketName, objectPrefix := getBucketNameAndObjectPrefix(config.backupPath)
+	bucketName, objectPrefix := getBucketNameAndObjectPrefix(config.BackupPath)
 
 	objectListCall := service.Objects.List(bucketName)
 	if objectPrefix != "" {
