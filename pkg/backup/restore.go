@@ -39,6 +39,7 @@ func RestoreBackup(config *RestoreBackupConfig) error {
 			return err
 		}
 		config.BackupTimestamp = *backupTimestamp
+		fmt.Printf("Newest backup for %s is for timestamp %d\n", config.BigtableTableId, config.BackupTimestamp)
 	}
 
 	if !strings.HasPrefix(config.BackupPath, "gs://") {
@@ -70,8 +71,8 @@ func RestoreBackup(config *RestoreBackupConfig) error {
 		},
 	}
 
-	fmt.Println(restoreJobFromTemplateRequest.Parameters)
-	return nil
 	_, err = service.Projects.Templates.Create(config.BigtableProjectId, &restoreJobFromTemplateRequest).Do()
+	fmt.Printf("Created job for restoring %s with timestamp %d\n", config.BigtableTableId, config.BackupTimestamp)
+
 	return err
 }

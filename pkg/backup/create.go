@@ -82,7 +82,9 @@ func CreateBackup(config *CreateBackupConfig) error {
 		if err != nil {
 			return fmt.Errorf("Error backing up table with Id %s with error: %s", bigtableID, err)
 		}
+		fmt.Printf("Created job for backing up %s with timestamp %d\n", bigtableID, unixNow)
 	}
+
 	return nil
 }
 
