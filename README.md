@@ -22,7 +22,7 @@ Commands:
     Show help.
 
   create --bigtable-project-id=BIGTABLE-PROJECT-ID --bigtable-instance-id=BIGTABLE-INSTANCE-ID --bigtable-table-id-prefix=BIGTABLE-TABLE-ID-PREFIX --destination-path=DESTINATION-PATH --temp-prefix=TEMP-PREFIX [<flags>]
-    Create backups for all the tables for given prefix
+    Create backups for specific table or active periodic table or all the tables for given prefix
 
   list-backups --backup-path=BACKUP-PATH
     Restore backups of all or specific bigtableTableId created for specific timestamp

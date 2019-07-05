@@ -13,7 +13,7 @@ import (
 var (
 	app = kingpin.New("bigtable-backup", "A command-line for creating and restoring backups from bigtable.")
 
-	createCmd      = app.Command("create", "Create backups for all the tables for given prefix")
+	createCmd      = app.Command("create", "Create backups for specific table or active periodic table or all the tables for given prefix")
 	createCmdFlags = backup.RegisterCreateBackupFlags(createCmd)
 
 	listBackupsCmd  = app.Command("list-backups", "Restore backups of all or specific bigtableTableId created for specific timestamp")

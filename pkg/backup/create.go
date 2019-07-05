@@ -32,7 +32,10 @@ func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) *CreateBackupConfig {
 	config := CreateBackupConfig{}
 	cmd.Flag("bigtable-project-id", "The ID of the GCP project of the Cloud Bigtable instance that you want to read data from").Required().StringVar(&config.BigtableProjectId)
 	cmd.Flag("bigtable-instance-id", "The ID of the Cloud Bigtable instance that contains the table").Required().StringVar(&config.BigtableInstanceId)
-	cmd.Flag("bigtable-table-id-prefix", "Prefix to find the IDs of the Cloud Bigtable table to export").Required().StringVar(&config.BigtableTableIdPrefix)
+	cmd.Flag("bigtable-table-id-prefix",
+		"Prefix to find the IDs of the Cloud Bigtable table to export. " +
+		"It can be a table name to backup specific table or prefix to backup all tables matching the prefix. " +
+		"For periodic table set a prefix and set --periodic-table-duration flag").Required().StringVar(&config.BigtableTableIdPrefix)
 	cmd.Flag("destination-path", "GCS path where data should be written. For example, \"gs://mybucket/somefolder/\"").Required().StringVar(&config.DestinationPath)
 	cmd.Flag("temp-prefix", "Path and filename prefix for writing temporary files. ex: gs://MyBucket/tmp").Required().StringVar(&config.TempPrefix)
 	cmd.Flag("periodic-table-duration", "Periodic config set for cortex/loki tables. Used for backing up currently active periodic table").Default("0s").DurationVar(&config.PeriodicTableDuration)
