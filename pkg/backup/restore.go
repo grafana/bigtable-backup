@@ -34,7 +34,7 @@ func RegisterRestoreBackupsFlags(cmd *kingpin.CmdClause) *RestoreBackupConfig {
 
 func RestoreBackup(config *RestoreBackupConfig) error {
 	if config.BackupTimestamp == 0 {
-		backupTimestamp, err := getNewestBackupTimestamp(config.BackupPath)
+		backupTimestamp, err := getNewestBackupTimestamp(config.BackupPath, config.BigtableTableId)
 		if err != nil {
 			return err
 		}
@@ -45,8 +45,8 @@ func RestoreBackup(config *RestoreBackupConfig) error {
 		config.BackupPath = "gs://" + config.BackupPath
 	}
 
-	if !strings.HasSuffix(config.BackupPath, "/") {
-		config.BackupPath += "/"
+	if strings.HasSuffix(config.BackupPath, "/") {
+		config.BackupPath = config.BackupPath[0 : len(config.BackupPath)-1]
 	}
 
 	ctx := context.Background()
@@ -63,13 +63,15 @@ func RestoreBackup(config *RestoreBackupConfig) error {
 			"bigtableProject":    config.BigtableProjectId,
 			"bigtableInstanceId": config.BigtableInstanceId,
 			"bigtableTableId":    config.BigtableTableId,
-			"sourcePattern":      fmt.Sprintf("%s%d/%s%s*", config.BackupPath, config.BackupTimestamp, config.BigtableTableId, bigtableIDSeparatorInSeqFileName),
+			"sourcePattern":      fmt.Sprintf("%s/%s/%d/%s%s*", config.BackupPath, config.BigtableTableId, config.BackupTimestamp, config.BigtableTableId, bigtableIDSeparatorInSeqFileName),
 		},
 		Environment: &dataflowV1b3.RuntimeEnvironment{
 			TempLocation: config.TempPrefix,
 		},
 	}
 
+	fmt.Println(restoreJobFromTemplateRequest.Parameters)
+	return nil
 	_, err = service.Projects.Templates.Create(config.BigtableProjectId, &restoreJobFromTemplateRequest).Do()
 	return err
 }

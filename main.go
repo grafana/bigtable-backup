@@ -30,13 +30,16 @@ func main() {
 			log.Fatalf("Error creating backups %v", err)
 		}
 	case listBackupsCmd.FullCommand():
-		if backupTimestamps, err := backup.ListBackups(listBackupFlags); err != nil {
+		if backups, err := backup.ListBackups(listBackupFlags); err != nil {
 			log.Fatalf("Error listing backups %v", err)
 		} else {
-			if len(backupTimestamps) == 0 {
+			if len(backups) == 0 {
 				fmt.Println("No backups found")
 			} else {
-				fmt.Println("Backup timestamps\n", strings.Join(backupTimestamps, ", "))
+				fmt.Println("TableName: Backup Timestamps")
+				for tableName, backupTimestamps := range backups {
+					fmt.Printf("%s: %s\n", tableName, strings.Join(backupTimestamps, ", "))
+				}
 			}
 		}
 	case restoreCmd.FullCommand():

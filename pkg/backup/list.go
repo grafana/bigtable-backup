@@ -21,7 +21,7 @@ func RegisterListBackupsFlags(cmd *kingpin.CmdClause) *ListBackupConfig {
 	return &config
 }
 
-func ListBackups(config *ListBackupConfig) ([]string, error) {
+func ListBackups(config *ListBackupConfig) (map[string][]string, error) {
 	ctx := context.Background()
 	service, err := storageV1.NewService(ctx)
 	if err != nil {
@@ -44,26 +44,35 @@ func ListBackups(config *ListBackupConfig) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	backupTimestampsMap := make(map[string]struct{}, len(objects.Items))
+	backupTimestampsMap := make(map[string]map[string]struct{}, len(objects.Items))
 
 	for _, object := range objects.Items {
-		backupTimestamp := strings.SplitN(object.Name[len(objectPrefix):], "/", 2)[0]
-
-		if _, isOK := backupTimestampsMap[backupTimestamp]; isOK {
+		ss := strings.SplitN(object.Name[len(objectPrefix):], "/", 3)
+		if len(ss) < 3 {
+			continue
+		}
+		tableId := ss[0]
+		backupTimestamp := ss[1]
+		if !numbersOnlyRegex.Match([]byte(backupTimestamp)) {
 			continue
 		}
 
-		if numbersOnlyRegex.Match([]byte(backupTimestamp)) {
-			backupTimestampsMap[backupTimestamp] = struct{}{}
+		if _, isOk := backupTimestampsMap[tableId]; !isOk {
+			backupTimestampsMap[tableId] = map[string]struct{}{backupTimestamp: {}}
+		} else {
+			backupTimestampsMap[tableId][backupTimestamp] = struct{}{}
 		}
 	}
 
-	backupTimestamps := make([]string, 0, len(backupTimestampsMap))
-	for backupTimestamp := range backupTimestampsMap {
-		backupTimestamps = append(backupTimestamps, backupTimestamp)
+	backupTimestampsList := make(map[string][]string, len(backupTimestampsMap))
+	for tableId, backupTimestamps := range backupTimestampsMap {
+		backupTimestampsList[tableId] = make([]string, 0, len(backupTimestamps))
+		for backupTimestamp := range backupTimestamps {
+			backupTimestampsList[tableId] = append(backupTimestampsList[tableId], backupTimestamp)
+		}
 	}
 
-	return backupTimestamps, nil
+	return backupTimestampsList, nil
 }
 
 func getBucketNameAndObjectPrefix(backupPath string) (bucketName, objectPrefix string) {
@@ -83,12 +92,17 @@ func getBucketNameAndObjectPrefix(backupPath string) (bucketName, objectPrefix s
 	return
 }
 
-func getNewestBackupTimestamp(backupPath string) (*int64, error) {
-	backupTimestamps, err := ListBackups(&ListBackupConfig{backupPath})
+func getNewestBackupTimestamp(backupPath string, tableId string) (*int64, error) {
+	backups, err := ListBackups(&ListBackupConfig{backupPath})
 	if err != nil {
 		return nil, err
 	}
 
+	if len(backups) == 0 {
+		return nil, errors.New("No backups found")
+	}
+
+	backupTimestamps := backups[tableId]
 	if len(backupTimestamps) == 0 {
 		return nil, errors.New("No backups found")
 	}

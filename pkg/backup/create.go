@@ -41,11 +41,10 @@ func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) *CreateBackupConfig {
 }
 
 func CreateBackup(config *CreateBackupConfig) error {
-	if !strings.HasSuffix(config.DestinationPath, "/") {
-		config.DestinationPath = config.DestinationPath + "/"
+	if strings.HasSuffix(config.DestinationPath, "/") {
+		config.DestinationPath = config.DestinationPath[0 : len(config.DestinationPath)-1]
 	}
 	unixNow := time.Now().Unix()
-	destinationPathWithTimestamp := fmt.Sprintf("%s%d/", config.DestinationPath, unixNow)
 
 	bigtableIDs, err := listBigtableIDsWithPrefix(config)
 	if err != nil {
@@ -64,6 +63,7 @@ func CreateBackup(config *CreateBackupConfig) error {
 
 	for _, bigtableID := range bigtableIDs {
 		jobName := fmt.Sprintf("export-%s-%d", bigtableID, unixNow)
+		destinationPathWithTimestamp := fmt.Sprintf("%s/%s/%d/", config.DestinationPath, bigtableID, unixNow)
 		createJobFromTemplateRequest := dataflowV1b3.CreateJobFromTemplateRequest{
 			JobName: jobName,
 			GcsPath: bigtableToGCSSequenceFileTemplatePath,
