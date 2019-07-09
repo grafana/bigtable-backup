@@ -48,7 +48,7 @@ func ListBackups(config *ListBackupConfig) (map[string][]string, error) {
 
 	for _, object := range objects.Items {
 		ss := strings.SplitN(object.Name[len(objectPrefix):], "/", 3)
-		if len(ss) < 3 {
+		if len(ss) < 3 || ss[2] == ""{
 			continue
 		}
 		tableId := ss[0]

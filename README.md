@@ -29,6 +29,9 @@ Commands:
 
   restore --backup-path=BACKUP-PATH --bigtable-project-id=BIGTABLE-PROJECT-ID --bigtable-instance-id=BIGTABLE-INSTANCE-ID --bigtable-table-id=BIGTABLE-TABLE-ID --temp-prefix=TEMP-PREFIX [<flags>]
     Restore backups of specific bigtableTableId created at a timestamp
+
+  delete-backup --bigtable-table-id=BIGTABLE-TABLE-ID --backup-path=BACKUP-PATH --backup-timestamp=BACKUP-TIMESTAMP
+    Delete backup of a table with timestamp
 ```
 
 ### Note:

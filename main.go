@@ -21,6 +21,9 @@ var (
 
 	restoreCmd      = app.Command("restore", "Restore backups of specific bigtableTableId created at a timestamp")
 	restoreCmdFlags = backup.RegisterRestoreBackupsFlags(restoreCmd)
+
+	deleteBackupsCmd  = app.Command("delete-backup", "Delete backup of a table with timestamp")
+	deleteBackupFlags = backup.RegisterDeleteBackupsFlags(deleteBackupsCmd)
 )
 
 func main() {
@@ -45,6 +48,10 @@ func main() {
 	case restoreCmd.FullCommand():
 		if err := backup.RestoreBackup(restoreCmdFlags); err != nil {
 			log.Fatalf("Error restoring backup %v", err)
+		}
+	case deleteBackupsCmd.FullCommand():
+		if err := backup.DeleteBackup(deleteBackupFlags); err != nil {
+			log.Fatalf("Error deleting backup %v", err)
 		}
 	}
 }
