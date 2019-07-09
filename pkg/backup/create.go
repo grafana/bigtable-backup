@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -25,7 +24,6 @@ type CreateBackupConfig struct {
 	BigtableTableIdPrefix string
 	DestinationPath       string
 	TempPrefix            string
-	PeriodicTableDuration time.Duration
 }
 
 func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) *CreateBackupConfig {
@@ -34,11 +32,9 @@ func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) *CreateBackupConfig {
 	cmd.Flag("bigtable-instance-id", "The ID of the Cloud Bigtable instance that contains the table").Required().StringVar(&config.BigtableInstanceId)
 	cmd.Flag("bigtable-table-id-prefix",
 		"Prefix to find the IDs of the Cloud Bigtable table to export. " +
-		"It can be a table name to backup specific table or prefix to backup all tables matching the prefix. " +
-		"For periodic table set a prefix and set --periodic-table-duration flag").Required().StringVar(&config.BigtableTableIdPrefix)
+		"It can be a table name to backup specific table or prefix to backup all tables matching the prefix.").Required().StringVar(&config.BigtableTableIdPrefix)
 	cmd.Flag("destination-path", "GCS path where data should be written. For example, \"gs://mybucket/somefolder/\"").Required().StringVar(&config.DestinationPath)
 	cmd.Flag("temp-prefix", "Path and filename prefix for writing temporary files. ex: gs://MyBucket/tmp").Required().StringVar(&config.TempPrefix)
-	cmd.Flag("periodic-table-duration", "Periodic config set for cortex/loki tables. Used for backing up currently active periodic table").Default("0s").DurationVar(&config.PeriodicTableDuration)
 
 	return &config
 }
@@ -104,17 +100,11 @@ func listBigtableIDsWithPrefix(config *CreateBackupConfig) ([]string, error) {
 		return nil, err
 	}
 
-	bigtableTableIdPrefix := config.BigtableTableIdPrefix
-	if config.PeriodicTableDuration != 0 {
-		periodSecs := int64(config.PeriodicTableDuration / time.Second)
-		bigtableTableIdPrefix += strconv.Itoa(int(time.Now().Unix() / periodSecs))
-	}
-
 	tableIDs := make([]string, 0, len(listTableResponse.Tables))
 	tableID := ""
 	for _, table := range listTableResponse.Tables {
 		tableID = table.Name[strings.LastIndex(table.Name, "/")+1:]
-		if strings.HasPrefix(tableID, bigtableTableIdPrefix) {
+		if strings.HasPrefix(tableID, config.BigtableTableIdPrefix) {
 			tableIDs = append(tableIDs, tableID)
 		}
 	}
