@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -27,7 +28,7 @@ func RegisterListBackupsFlags(cmd *kingpin.CmdClause) *ListBackupConfig {
 
 // ListBackups lists the available backups. It returns a map from the tableID
 // to the backup timestamps for that table.
-func ListBackups(config *ListBackupConfig) (map[string][]string, error) {
+func ListBackups(config *ListBackupConfig) (map[string][]int64, error) {
 	ctx := context.Background()
 	service, err := storageV1.NewService(ctx)
 	if err != nil {
@@ -49,7 +50,7 @@ func ListBackups(config *ListBackupConfig) (map[string][]string, error) {
 	numbersOnlyRegex := regexp.MustCompile("^[0-9]*$")
 
 	// tableID --> timestamp.
-	backupTimestampsMap := make(map[string]map[string]struct{}, len(objects.Items))
+	backupTimestampsMap := make(map[string]map[int64]struct{}, len(objects.Items))
 
 	for _, object := range objects.Items {
 		ss := strings.SplitN(object.Name[len(objectPrefix):], "/", 3)
@@ -62,16 +63,21 @@ func ListBackups(config *ListBackupConfig) (map[string][]string, error) {
 			continue
 		}
 
+		backupTimestampInt64, err := strconv.ParseInt(ss[1], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
 		if _, isOk := backupTimestampsMap[tableID]; !isOk {
-			backupTimestampsMap[tableID] = map[string]struct{}{backupTimestamp: {}}
+			backupTimestampsMap[tableID] = map[int64]struct{}{backupTimestampInt64: {}}
 		} else {
-			backupTimestampsMap[tableID][backupTimestamp] = struct{}{}
+			backupTimestampsMap[tableID][backupTimestampInt64] = struct{}{}
 		}
 	}
 
-	backupTimestampsList := make(map[string][]string, len(backupTimestampsMap))
+	backupTimestampsList := make(map[string][]int64, len(backupTimestampsMap))
 	for tableID, backupTimestamps := range backupTimestampsMap {
-		backupTimestampsList[tableID] = make([]string, 0, len(backupTimestamps))
+		backupTimestampsList[tableID] = make([]int64, 0, len(backupTimestamps))
 		for backupTimestamp := range backupTimestamps {
 			backupTimestampsList[tableID] = append(backupTimestampsList[tableID], backupTimestamp)
 		}
@@ -112,10 +118,9 @@ func getNewestBackupTimestamp(backupPath string, tableID string) (*int64, error)
 		return nil, errors.New("No backups found")
 	}
 
-	// TODO(goutham): This is lexicographic sorting. Will break in a "few" years.
-	newestBackupTimestamp, err := strconv.ParseInt(backupTimestamps[len(backupTimestamps)-1], 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	return &newestBackupTimestamp, nil
+	sort.Slice(backupTimestamps, func(i, j int) bool {
+		return backupTimestamps[i] < backupTimestamps[j]
+	})
+
+	return &backupTimestamps[len(backupTimestamps)-1], nil
 }

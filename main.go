@@ -49,7 +49,7 @@ func main() {
 				} else {
 					fmt.Println("TableName: Backup Timestamps")
 					for tableName, backupTimestamps := range backups {
-						fmt.Printf("%s: %s\n", tableName, strings.Join(backupTimestamps, ", "))
+						fmt.Printf("%s: %s\n", tableName, strings.Trim(strings.Replace(fmt.Sprint(backupTimestamps), " ", ",", -1), "[]"))
 					}
 				}
 			}
