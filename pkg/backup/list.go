@@ -13,13 +13,15 @@ import (
 
 // ListBackupConfig has the config for ListBackup command.
 type ListBackupConfig struct {
-	BackupPath string
+	BackupPath   string
+	OutputFormat string
 }
 
 // RegisterListBackupsFlags registers the flags for list backups.
 func RegisterListBackupsFlags(cmd *kingpin.CmdClause) *ListBackupConfig {
 	config := ListBackupConfig{}
 	cmd.Flag("backup-path", "GCS path where backups can be found").Required().StringVar(&config.BackupPath)
+	cmd.Flag("output", "Output Format. Support json, text. Defaults to text").Short('o').StringVar(&config.OutputFormat)
 	return &config
 }
 
@@ -96,7 +98,7 @@ func getBucketNameAndObjectPrefix(backupPath string) (bucketName, objectPrefix s
 }
 
 func getNewestBackupTimestamp(backupPath string, tableID string) (*int64, error) {
-	backups, err := ListBackups(&ListBackupConfig{backupPath})
+	backups, err := ListBackups(&ListBackupConfig{BackupPath: backupPath})
 	if err != nil {
 		return nil, err
 	}

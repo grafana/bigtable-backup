@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -39,9 +40,17 @@ func main() {
 			if len(backups) == 0 {
 				fmt.Println("No backups found")
 			} else {
-				fmt.Println("TableName: Backup Timestamps")
-				for tableName, backupTimestamps := range backups {
-					fmt.Printf("%s: %s\n", tableName, strings.Join(backupTimestamps, ", "))
+				if strings.ToLower(listBackupFlags.OutputFormat) == "json" {
+					output, err := json.Marshal(backups)
+					if err != nil {
+						log.Fatalf("Failed to print backups in json format with error %v", err)
+					}
+					fmt.Printf("%s", output)
+				} else {
+					fmt.Println("TableName: Backup Timestamps")
+					for tableName, backupTimestamps := range backups {
+						fmt.Printf("%s: %s\n", tableName, strings.Join(backupTimestamps, ", "))
+					}
 				}
 			}
 		}
