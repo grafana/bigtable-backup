@@ -16,6 +16,7 @@ import (
 const (
 	bigtableToGCSSequenceFileTemplatePath = "gs://dataflow-templates/latest/Cloud_Bigtable_to_GCS_SequenceFile"
 	bigtableIDSeparatorInSeqFileName      = ":"
+	jobStateCheckDuration                 = 10 * time.Second
 )
 
 // CreateBackupConfig is the config for CreateBackup command.
@@ -25,6 +26,7 @@ type CreateBackupConfig struct {
 	BigtableTableIDPrefix string
 	DestinationPath       string
 	TempPrefix            string
+	JobLocation           string
 }
 
 // RegisterCreateBackupFlags registers the flags for CreateBackup command.
@@ -37,6 +39,7 @@ func RegisterCreateBackupFlags(cmd *kingpin.CmdClause) *CreateBackupConfig {
 			"It can be a table name to backup specific table or prefix to backup all tables matching the prefix.").Required().StringVar(&config.BigtableTableIDPrefix)
 	cmd.Flag("destination-path", "GCS path where data should be written. For example, \"gs://mybucket/somefolder/\"").Required().StringVar(&config.DestinationPath)
 	cmd.Flag("temp-prefix", "Path and filename prefix for writing temporary files. ex: gs://MyBucket/tmp").Required().StringVar(&config.TempPrefix)
+	cmd.Flag("job-location", "Location where we want to run the job e.g us-central1, europe-west1").Default("us-central1").StringVar(&config.JobLocation)
 
 	return &config
 }
@@ -61,6 +64,8 @@ func CreateBackup(config *CreateBackupConfig) error {
 		return err
 	}
 
+	var jobFailureStates = map[string]struct{}{"JOB_STATE_FAILED": {}, "JOB_STATE_CANCELLED": {}, "JOB_STATE_CANCELLING": {}}
+
 	for _, tableID := range tableIDs {
 		jobName := fmt.Sprintf("export-%s-%d", tableID, unixNow)
 		destinationPathWithTimestamp := fmt.Sprintf("%s/%s/%d/", config.DestinationPath, tableID, unixNow)
@@ -77,12 +82,34 @@ func CreateBackup(config *CreateBackupConfig) error {
 			Environment: &dataflowV1b3.RuntimeEnvironment{
 				TempLocation: config.TempPrefix,
 			},
+			Location: config.JobLocation,
 		}
-		_, err = service.Projects.Templates.Create(config.BigtableProjectID, &createJobFromTemplateRequest).Do()
+
+		job, err := service.Projects.Templates.Create(config.BigtableProjectID, &createJobFromTemplateRequest).Do()
 		if err != nil {
 			return fmt.Errorf("Error backing up table with Id %s with error: %s", tableID, err)
 		}
 		fmt.Printf("Created job for backing up %s with timestamp %d\n", tableID, unixNow)
+
+		// Polling state of the job until its done or fails
+		for {
+			fetchedJob, err := service.Projects.Locations.Jobs.Get(config.BigtableProjectID, config.JobLocation, job.Id).Do()
+			if err != nil {
+				return fmt.Errorf("Error getting state of the job with Id %s with error: %s", job.Id, err)
+			}
+
+			if state, isOK := jobFailureStates[fetchedJob.CurrentState]; isOK {
+				return fmt.Errorf("Data flow job failed with state %s", state)
+			}
+			if fetchedJob.CurrentState == "JOB_STATE_DONE" {
+				break
+			}
+
+			fmt.Printf("Current job state: %s\n", fetchedJob.CurrentState)
+
+			time.Sleep(jobStateCheckDuration)
+		}
+		fmt.Printf("Job for backing up %s with timestamp %d finished\n", tableID, unixNow)
 	}
 
 	return nil
