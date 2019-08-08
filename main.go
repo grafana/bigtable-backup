@@ -37,20 +37,19 @@ func main() {
 		if backups, err := backup.ListBackups(listBackupFlags); err != nil {
 			log.Fatalf("Error listing backups %v", err)
 		} else {
-			if len(backups) == 0 {
-				fmt.Println("No backups found")
+			if strings.ToLower(listBackupFlags.OutputFormat) == "json" {
+				output, err := json.Marshal(backups)
+				if err != nil {
+					log.Fatalf("Failed to print backups in json format with error %v", err)
+				}
+				fmt.Printf("%s", output)
 			} else {
-				if strings.ToLower(listBackupFlags.OutputFormat) == "json" {
-					output, err := json.Marshal(backups)
-					if err != nil {
-						log.Fatalf("Failed to print backups in json format with error %v", err)
-					}
-					fmt.Printf("%s", output)
-				} else {
-					fmt.Println("TableName: Backup Timestamps")
-					for tableName, backupTimestamps := range backups {
-						fmt.Printf("%s: %s\n", tableName, strings.Trim(strings.Replace(fmt.Sprint(backupTimestamps), " ", ",", -1), "[]"))
-					}
+				if len(backups) == 0 {
+					fmt.Println("No backups found")
+				}
+				fmt.Println("TableName: Backup Timestamps")
+				for tableName, backupTimestamps := range backups {
+					fmt.Printf("%s: %s\n", tableName, strings.Trim(strings.Replace(fmt.Sprint(backupTimestamps), " ", ",", -1), "[]"))
 				}
 			}
 		}
