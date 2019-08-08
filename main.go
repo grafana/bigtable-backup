@@ -46,6 +46,7 @@ func main() {
 			} else {
 				if len(backups) == 0 {
 					fmt.Println("No backups found")
+					return
 				}
 				fmt.Println("TableName: Backup Timestamps")
 				for tableName, backupTimestamps := range backups {
