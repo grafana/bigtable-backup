@@ -77,10 +77,15 @@ func ListBackups(config *ListBackupConfig) (map[string][]int64, error) {
 
 	backupTimestampsList := make(map[string][]int64, len(backupTimestampsMap))
 	for tableID, backupTimestamps := range backupTimestampsMap {
-		backupTimestampsList[tableID] = make([]int64, 0, len(backupTimestamps))
+		timestamps := make([]int64, 0, len(backupTimestamps))
 		for backupTimestamp := range backupTimestamps {
-			backupTimestampsList[tableID] = append(backupTimestampsList[tableID], backupTimestamp)
+			timestamps = append(timestamps, backupTimestamp)
 		}
+
+		sort.Slice(timestamps, func(i, j int) bool {
+			return timestamps[i] < timestamps[j]
+		})
+		backupTimestampsList[tableID] = timestamps
 	}
 
 	return backupTimestampsList, nil
@@ -117,10 +122,6 @@ func getNewestBackupTimestamp(backupPath string, tableID string) (*int64, error)
 	if len(backupTimestamps) == 0 {
 		return nil, errors.New("No backups found")
 	}
-
-	sort.Slice(backupTimestamps, func(i, j int) bool {
-		return backupTimestamps[i] < backupTimestamps[j]
-	})
 
 	return &backupTimestamps[len(backupTimestamps)-1], nil
 }
