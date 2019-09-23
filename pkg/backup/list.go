@@ -42,37 +42,45 @@ func ListBackups(config *ListBackupConfig) (map[string][]int64, error) {
 		objectListCall.Prefix(objectPrefix)
 	}
 
-	objects, err := objectListCall.Do()
-	if err != nil {
-		return nil, err
-	}
-
 	numbersOnlyRegex := regexp.MustCompile("^[0-9]*$")
 
 	// tableID --> timestamp.
-	backupTimestampsMap := make(map[string]map[int64]struct{}, len(objects.Items))
+	backupTimestampsMap := make(map[string]map[int64]struct{})
 
-	for _, object := range objects.Items {
-		ss := strings.SplitN(object.Name[len(objectPrefix):], "/", 3)
-		if len(ss) < 3 || ss[2] == "" {
-			continue
-		}
-		tableID := ss[0]
-		backupTimestamp := ss[1]
-		if !numbersOnlyRegex.Match([]byte(backupTimestamp)) {
-			continue
-		}
-
-		backupTimestampInt64, err := strconv.ParseInt(ss[1], 10, 64)
+	for {
+		objects, err := objectListCall.Do()
 		if err != nil {
 			return nil, err
 		}
 
-		if _, isOk := backupTimestampsMap[tableID]; !isOk {
-			backupTimestampsMap[tableID] = map[int64]struct{}{backupTimestampInt64: {}}
-		} else {
-			backupTimestampsMap[tableID][backupTimestampInt64] = struct{}{}
+		for _, object := range objects.Items {
+			ss := strings.SplitN(object.Name[len(objectPrefix):], "/", 3)
+			if len(ss) < 3 || ss[2] == "" {
+				continue
+			}
+			tableID := ss[0]
+			backupTimestamp := ss[1]
+			if !numbersOnlyRegex.Match([]byte(backupTimestamp)) {
+				continue
+			}
+
+			backupTimestampInt64, err := strconv.ParseInt(ss[1], 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			if _, isOk := backupTimestampsMap[tableID]; !isOk {
+				backupTimestampsMap[tableID] = map[int64]struct{}{backupTimestampInt64: {}}
+			} else {
+				backupTimestampsMap[tableID][backupTimestampInt64] = struct{}{}
+			}
 		}
+
+		if objects.NextPageToken == "" {
+			break
+		}
+
+		objectListCall.PageToken(objects.NextPageToken)
 	}
 
 	backupTimestampsList := make(map[string][]int64, len(backupTimestampsMap))
